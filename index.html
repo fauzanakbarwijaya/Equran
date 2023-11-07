@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Quran</title>
+    <link rel="stylesheet" href="./public/assets/styles/css/bootstrap.min.css">
+</head>
+
+<body class="bg-light">
+    <div id="Equran">
+        <nav class="navbar navbar-expand-lg bg-dark">
+            <div class="container text-center d-block mx-auto">
+                <a class="navbar-brand text-white fs-2 ms-md-3 mb-5" href="index.html">E-Quran</a>
+                <p class="text-white my-0 mb-3">by <span><a class="text-decoration-none text-success"
+                            href="http://zan.epizy.com/">Zan</a></span></p>
+                <div class="d-flex justify-content-center" id="">
+                    <form class="" role="search">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                    </form>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-5" v-if="!viewQuran">
+            <h3 class="text-center fw-bold">Daftar Isi</h3>
+            <div class="row" v-for="item, index in quranList">
+                <div class="col-md-12">
+                    <div class="quran-list d-flex">
+                        <p class="bg-dark text-white text-center" style="width: 30px; height: 30px;">
+                            {{ item . data[index] . nomor }}</p>
+                        <p class="ms-3 text-decoration-underline text-success" @click="viewSurah(item.data[index].nomor, index)">
+                            {{ item . data[index] . namaLatin }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container mt-5" v-else>
+            <button type="button" class="btn btn-dark" @click="viewQuran=false">Back</button>
+            <div class="detail-surah mt-5">
+                <h5 class="fw-bold">{{ currentSurah . namaLatin }} ({{ currentSurah . arti }})</h5>
+                <p>{{ currentSurah . jumlahAyat }} ayat - {{ currentSurah . tempatTurun }}</p>
+
+                <p class="mt-3" v-html="currentSurah.deskripsi"></p>
+
+                <p class="fw-bold">Play murottal :</p>
+                <audio controls>
+                    <source :src="currentSurah.audioFull['01']" type="audio/mpeg">
+                </audio>
+            </div>
+
+            <div class="surah">
+                <p v-for="ayat in currentSurah.ayat" :key="ayat.nomorAyat" class="fs-2 text-end mb-5">{{ ayat.teksArab }} <br><span class="fs-5 text-muted">{{ ayat.teksLatin }}</span></p>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script src="./public/assets/styles/js/bootstrap.bundle.min.js"></script>
+
+    <script type="module">
+        import {
+            createApp
+        } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+
+        createApp({
+            data() {
+                return {
+                    quranList: [],
+                    viewQuran: false,
+                    selectedSurah: '',
+                    currentSurah: '',
+                }
+            },
+            methods: {
+                async getlistQuran() {
+                    let response = await fetch("https://equran.id/api/v2/surat");
+                    let data = await response.json();
+                    let results = data.data
+                    results.forEach(item => {
+                        this.getData(item);
+                    });
+                },
+                async getData(result) {
+                    try {
+                        let encodedNama = encodeURIComponent(result
+                            .nama);
+                        let response = await fetch(`https://equran.id/api/v2/surat?name=${encodedNama}`);
+                        if (response.status === 200) {
+                            let data = await response.json();
+
+                            this.quranList.push(data);
+                        } else {
+                            console.error("Request failed with status", response.status);
+                        }
+                    } catch (error) {
+                        console.error("Error fetching data:", error);
+                    }
+                },
+                async viewSurah(nomorSurah, index) {
+                    let response = await fetch(`https://equran.id/api/v2/surat/${nomorSurah}`);
+                    let data = await response.json();
+                    this.viewQuran = true;
+                    this.selectedSurah = data;
+                    this.currentSurah = this.selectedSurah.data;
+                }
+
+
+            },
+
+
+            mounted() {
+                this.getlistQuran()
+            }
+        }).mount('#Equran')
+    </script>
+</body>
+
+</html>
